@@ -1,0 +1,961 @@
+---
+title: "GRAT-Index"
+author: "Florida Community Innovation GRAT Team"
+date: "2025-1-20"
+output: html_document
+---
+```{r setup, include = F, message = F}
+library(tidycensus)
+library(tidyverse)
+library(dplyr)
+census_api_key("b04a3c521c0b4e5c1a74610ea5c18a5d31ed9aac")
+```
+
+## Census Data
+```{r, message = F, warning = F, output = F}
+# Store variables here
+variables <- c("B25001_001", "B25004_001", "B25058_001", "B25077_001", "B25003_003","B25003_002", "B03002_003", "B03002_004", "B03002_001", "B19013_001","B17001_002", "B17001_001", "B25070_007", "B25070_008", "B25070_009","B25070_010", "B25070_011", "B25091_009", "B25091_010", "B25091_011","B25091_012", "B25091_013", "B25095_005", "B25095_006", "B25095_007","B25095_008"
+)
+
+# Get census data for our three time periods (will adjust after MVP)
+census_data_2020 <- get_acs(
+  geography = "tract",
+  state = "FL",
+  county = "Alachua",
+  variables = variables,
+  geometry = FALSE,
+  year = 2020
+)
+
+census_data_2022 <- get_acs(
+  geography = "tract",
+  state = "FL",
+  county = "Alachua",
+  variables = variables,
+  geometry = FALSE,
+  year = 2022
+)
+
+census_data_2023 <- get_acs(
+  geography = "tract",
+  state = "FL",
+  county = "Alachua",
+  variables = variables,
+  geometry = FALSE,
+  year = 2023
+)
+```
+
+```{r}
+census_data_2020 <- census_data_2020|>
+  pivot_wider(
+    id_cols = c(GEOID, NAME),
+    names_from = variable,
+    values_from = estimate
+  ) |> group_by(GEOID)
+
+census_data_2022 <- census_data_2022|>
+  pivot_wider(
+    id_cols = c(GEOID, NAME),
+    names_from = variable,
+    values_from = estimate
+  ) |> group_by(GEOID)
+
+census_data_2023 <- census_data_2023|>
+  pivot_wider(
+    id_cols = c(GEOID, NAME),
+    names_from = variable,
+    values_from = estimate
+    ) |> group_by(GEOID)
+```
+
+## Data processing
+
+``` {r}
+# Need to fix census_data_2020 NAME column delimiter
+library(stringr)
+
+census_data_2020 <- census_data_2020 %>%
+  mutate(NAME = str_replace_all(NAME, ",", ";"))
+```
+
+```{r}
+census_data_2020 <- census_data_2020 %>%
+  rename(
+    Median_Contract_Rent = B25058_001,
+    Median_Home_Value = B25077_001,
+    Total_Renter_Occupied_Units = B25003_003,
+    Vacancy_Rate = B25004_001,
+    Total_Owner_Occupied_Units = B25003_002,
+    White_Alone = B03002_003,
+    Black_Alone = B03002_004,
+    Total_Population = B03002_001,
+    Median_Household_Income = B19013_001,
+    Total_Housing_Units = B25001_001,
+    Below_Poverty_Level = B17001_002,
+    Total_Poverty_Population = B17001_001,
+    Renter_Paying_30_34 = B25070_007,
+    Renter_Paying_35_39 = B25070_008,
+    Renter_Paying_40_49 = B25070_009,
+    Renter_Paying_50_59 = B25070_010,
+    Renter_Paying_60_or_More = B25070_011,
+    Owner_With_Mortgage_Paying_30_34 = B25091_009,
+    Owner_With_Mortgage_Paying_35_39 = B25091_010,
+    Owner_With_Mortgage_Paying_40_49 = B25091_011,
+    Owner_With_Mortgage_Paying_50_59 = B25091_012,
+    Owner_With_Mortgage_Paying_60_or_More = B25091_013,
+    Owner_Without_Mortgage_Paying_30_34 = B25095_005,
+    Owner_Without_Mortgage_Paying_35_39 = B25095_006,
+    Owner_Without_Mortgage_Paying_40_49 = B25095_007,
+    Owner_Without_Mortgage_Paying_50_or_More = B25095_008
+  )
+
+census_data_2022 <- census_data_2022 %>%
+  rename(
+    Total_Housing_Units = B25001_001,
+    Median_Contract_Rent = B25058_001,
+    Median_Home_Value = B25077_001,
+    Total_Renter_Occupied_Units = B25003_003,
+    Vacancy_Rate = B25004_001,
+    Total_Owner_Occupied_Units = B25003_002,
+    White_Alone = B03002_003,
+    Black_Alone = B03002_004,
+    Total_Population = B03002_001,
+    Median_Household_Income = B19013_001,
+    Total_Housing_Units = B25001_001,
+    Below_Poverty_Level = B17001_002,
+    Total_Poverty_Population = B17001_001,
+    Renter_Paying_30_34 = B25070_007,
+    Renter_Paying_35_39 = B25070_008,
+    Renter_Paying_40_49 = B25070_009,
+    Renter_Paying_50_59 = B25070_010,
+    Renter_Paying_60_or_More = B25070_011,
+    Owner_With_Mortgage_Paying_30_34 = B25091_009,
+    Owner_With_Mortgage_Paying_35_39 = B25091_010,
+    Owner_With_Mortgage_Paying_40_49 = B25091_011,
+    Owner_With_Mortgage_Paying_50_59 = B25091_012,
+    Owner_With_Mortgage_Paying_60_or_More = B25091_013,
+    Owner_Without_Mortgage_Paying_30_34 = B25095_005,
+    Owner_Without_Mortgage_Paying_35_39 = B25095_006,
+    Owner_Without_Mortgage_Paying_40_49 = B25095_007,
+    Owner_Without_Mortgage_Paying_50_or_More = B25095_008
+  )
+
+census_data_2023 <- census_data_2023 %>%
+  rename(
+    Median_Contract_Rent = B25058_001,
+    Median_Home_Value = B25077_001,
+    Total_Renter_Occupied_Units = B25003_003,
+    Vacancy_Rate = B25004_001,
+    Total_Owner_Occupied_Units = B25003_002,
+    White_Alone = B03002_003,
+    Black_Alone = B03002_004,
+    Total_Population = B03002_001,
+    Median_Household_Income = B19013_001,
+    Total_Housing_Units = B25001_001,
+    Below_Poverty_Level = B17001_002,
+    Total_Poverty_Population = B17001_001,
+    Renter_Paying_30_34 = B25070_007,
+    Renter_Paying_35_39 = B25070_008,
+    Renter_Paying_40_49 = B25070_009,
+    Renter_Paying_50_59 = B25070_010,
+    Renter_Paying_60_or_More = B25070_011,
+    Owner_With_Mortgage_Paying_30_34 = B25091_009,
+    Owner_With_Mortgage_Paying_35_39 = B25091_010,
+    Owner_With_Mortgage_Paying_40_49 = B25091_011,
+    Owner_With_Mortgage_Paying_50_59 = B25091_012,
+    Owner_With_Mortgage_Paying_60_or_More = B25091_013,
+    Owner_Without_Mortgage_Paying_30_34 = B25095_005,
+    Owner_Without_Mortgage_Paying_35_39 = B25095_006,
+    Owner_Without_Mortgage_Paying_40_49 = B25095_007,
+    Owner_Without_Mortgage_Paying_50_or_More = B25095_008
+  )
+```
+
+
+```{r}
+census_data_2020 <- census_data_2020 %>%
+  mutate(
+    Vacancy_Rate = (Total_Housing_Units - Total_Renter_Occupied_Units - Total_Owner_Occupied_Units) / Total_Housing_Units * 100,
+    Percent_White_Alone = White_Alone / Total_Population * 100,
+    Percent_Black_Alone = Black_Alone / Total_Population * 100,
+    Poverty_Rate = Below_Poverty_Level / Total_Poverty_Population * 100,
+    Total_Renter_Paying_30 = Renter_Paying_30_34 + Renter_Paying_35_39 + 
+                             Renter_Paying_40_49 + Renter_Paying_50_59 + 
+                             Renter_Paying_60_or_More,
+    Percent_Renter_Paying_30 = (Total_Renter_Paying_30 / Total_Renter_Occupied_Units) * 100,
+    
+    Total_Owner_With_Mortgage_Paying_30 = Owner_With_Mortgage_Paying_30_34 + 
+                                          Owner_With_Mortgage_Paying_35_39 + 
+                                          Owner_With_Mortgage_Paying_40_49 + 
+                                          Owner_With_Mortgage_Paying_50_59 + 
+                                          Owner_With_Mortgage_Paying_60_or_More,
+    Percent_Owner_With_Mortgage_Paying_30 = (Total_Owner_With_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+        Total_Owner_Without_Mortgage_Paying_30 = Owner_Without_Mortgage_Paying_30_34 + 
+                                             Owner_Without_Mortgage_Paying_35_39 + 
+                                             Owner_Without_Mortgage_Paying_40_49 + 
+                                             Owner_Without_Mortgage_Paying_50_or_More,
+    Percent_Owner_Without_Mortgage_Paying_30 = (Total_Owner_Without_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+    
+    Vacancy_Rate_Percent = (Vacancy_Rate / Total_Housing_Units) * 100,
+    
+    Percent_Below_Poverty = (Below_Poverty_Level / Total_Poverty_Population) * 100 
+  )
+census_data_2022 <- census_data_2022 %>%
+  mutate(
+     Vacancy_Rate = (Total_Housing_Units - Total_Renter_Occupied_Units - Total_Owner_Occupied_Units) / Total_Housing_Units * 100,
+    Percent_White_Alone = White_Alone / Total_Population * 100,
+    Percent_Black_Alone = Black_Alone / Total_Population * 100,
+    Poverty_Rate = Below_Poverty_Level / Total_Poverty_Population * 100,
+    Total_Renter_Paying_30 = Renter_Paying_30_34 + Renter_Paying_35_39 + 
+                             Renter_Paying_40_49 + Renter_Paying_50_59 + 
+                             Renter_Paying_60_or_More,
+    Percent_Renter_Paying_30 = (Total_Renter_Paying_30 / Total_Renter_Occupied_Units) * 100,
+    
+    Total_Owner_With_Mortgage_Paying_30 = Owner_With_Mortgage_Paying_30_34 + 
+                                          Owner_With_Mortgage_Paying_35_39 + 
+                                          Owner_With_Mortgage_Paying_40_49 + 
+                                          Owner_With_Mortgage_Paying_50_59 + 
+                                          Owner_With_Mortgage_Paying_60_or_More,
+    Percent_Owner_With_Mortgage_Paying_30 = (Total_Owner_With_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+        Total_Owner_Without_Mortgage_Paying_30 = Owner_Without_Mortgage_Paying_30_34 + 
+                                             Owner_Without_Mortgage_Paying_35_39 + 
+                                             Owner_Without_Mortgage_Paying_40_49 + 
+                                             Owner_Without_Mortgage_Paying_50_or_More,
+    Percent_Owner_Without_Mortgage_Paying_30 = (Total_Owner_Without_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+    
+    Vacancy_Rate_Percent = (Vacancy_Rate / Total_Housing_Units) * 100,
+    
+    Percent_Below_Poverty = (Below_Poverty_Level / Total_Poverty_Population) * 100 
+  )
+
+census_data_2023 <- census_data_2023 %>%
+  mutate(
+     Vacancy_Rate = (Total_Housing_Units - Total_Renter_Occupied_Units - Total_Owner_Occupied_Units) / Total_Housing_Units * 100,
+    Percent_White_Alone = White_Alone / Total_Population * 100,
+    Percent_Black_Alone = Black_Alone / Total_Population * 100,
+    Poverty_Rate = Below_Poverty_Level / Total_Poverty_Population * 100,
+    Total_Renter_Paying_30 = Renter_Paying_30_34 + Renter_Paying_35_39 + 
+                             Renter_Paying_40_49 + Renter_Paying_50_59 + 
+                             Renter_Paying_60_or_More,
+    Percent_Renter_Paying_30 = (Total_Renter_Paying_30 / Total_Renter_Occupied_Units) * 100,
+    
+    Total_Owner_With_Mortgage_Paying_30 = Owner_With_Mortgage_Paying_30_34 + 
+                                          Owner_With_Mortgage_Paying_35_39 + 
+                                          Owner_With_Mortgage_Paying_40_49 + 
+                                          Owner_With_Mortgage_Paying_50_59 + 
+                                          Owner_With_Mortgage_Paying_60_or_More,
+    Percent_Owner_With_Mortgage_Paying_30 = (Total_Owner_With_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+        Total_Owner_Without_Mortgage_Paying_30 = Owner_Without_Mortgage_Paying_30_34 + 
+                                             Owner_Without_Mortgage_Paying_35_39 + 
+                                             Owner_Without_Mortgage_Paying_40_49 + 
+                                             Owner_Without_Mortgage_Paying_50_or_More,
+    Percent_Owner_Without_Mortgage_Paying_30 = (Total_Owner_Without_Mortgage_Paying_30 / Total_Owner_Occupied_Units) * 100,
+    
+    Vacancy_Rate_Percent = (Vacancy_Rate / Total_Housing_Units) * 100,
+    
+    Percent_Below_Poverty = (Below_Poverty_Level / Total_Poverty_Population) * 100 
+  )
+```
+
+## Replace Median Home Price Data with census api data?
+```{r}
+vars <- c(median_home_value = "B25077_001E")
+
+home_prices_2020 <- get_acs(geography = "tract", variables = vars, 
+                            state = "FL", year = 2020, survey = "acs5")
+
+home_prices_2022 <- get_acs(geography = "tract", variables = vars, 
+                            state = "FL", year = 2022, survey = "acs5")
+
+home_prices_2023 <- get_acs(geography = "tract", variables = vars, 
+                            state = "FL", year = 2023, survey = "acs5")
+
+home_prices <- home_prices_2020 %>%
+  rename(median_home_value_2020 = estimate) %>%
+  select(GEOID, NAME, median_home_value_2020) %>%
+  left_join(home_prices_2022 %>% rename(median_home_value_2022 = estimate) %>% select(GEOID, median_home_value_2022), by = "GEOID") %>%
+  left_join(home_prices_2023 %>% rename(median_home_value_2023 = estimate) %>% select(GEOID, median_home_value_2023), by = "GEOID")
+
+# Compute percentage changes
+home_prices <- home_prices %>%
+  mutate(
+    change_2020_2022 = (median_home_value_2022 - median_home_value_2020) / median_home_value_2020 * 100,
+    change_2022_2023 = (median_home_value_2023 - median_home_value_2022) / median_home_value_2022 * 100,
+    change_2020_2023 = (median_home_value_2023 - median_home_value_2020) / median_home_value_2020 * 100
+  ) %>%
+  drop_na()
+```
+
+```{r}
+state_avg <- home_prices %>%
+  pivot_longer(cols = starts_with("median_home_value_"), 
+               names_to = "year", 
+               values_to = "median_home_price") %>%
+  mutate(year = gsub("median_home_value_", "", year)) %>%  
+  group_by(year) %>%
+  summarize(state_median_price = mean(median_home_price, na.rm = TRUE)) %>%
+  pivot_wider(names_from = year, values_from = state_median_price) %>%
+  mutate(
+    change_2020_2022 = (`2022` - `2020`) / `2020` * 100,
+    change_2022_2023 = (`2023` - `2022`) / `2022` * 100,
+    change_2020_2023 = (`2023` - `2020`) / `2020` * 100
+  )
+
+tract_changes <- home_prices %>%
+  mutate(
+    tract_change_2020_2022 = (median_home_value_2022 - median_home_value_2020) / median_home_value_2020 * 100,
+    tract_change_2022_2023 = (median_home_value_2023 - median_home_value_2022) / median_home_value_2022 * 100,
+    tract_change_2020_2023 = (median_home_value_2023 - median_home_value_2020) / median_home_value_2020 * 100
+  ) %>%
+  mutate(
+    over_under_2020_2022 = tract_change_2020_2022 - state_avg$change_2020_2022,
+    over_under_2022_2023 = tract_change_2022_2023 - state_avg$change_2022_2023,
+    over_under_2020_2023 = tract_change_2020_2023 - state_avg$change_2020_2023
+  ) |>
+  drop_na()
+
+tract_changes <- tract_changes %>%
+  rename(
+    median_home_value_2020_tract = median_home_value_2020,
+    median_home_value_2022_tract = median_home_value_2022,
+    median_home_value_2023_tract = median_home_value_2023,
+    change_2020_2022_tract = change_2020_2022,
+    change_2022_2023_tract = change_2022_2023,
+    change_2020_2023_tract = change_2020_2023
+  )
+
+tract_changes <- tract_changes %>%
+  mutate(NAME = str_replace_all(NAME, ",", ";"))
+```
+
+```{r}
+append_year_suffix <- function(data, year) {
+  suffix <- paste0("_", year)
+  data %>%
+    rename_with(~ paste0(.x, suffix), -c(GEOID, NAME))
+}
+
+census_data_2023 <- append_year_suffix(census_data_2023, "2023")
+census_data_2022 <- append_year_suffix(census_data_2022, "2022")
+census_data_2020 <- append_year_suffix(census_data_2020, "2020")
+
+combined_census_data <- census_data_2023 %>%
+  full_join(census_data_2022, by = c("GEOID", "NAME")) %>%
+  full_join(census_data_2020, by = c("GEOID", "NAME"))
+```
+
+
+```{r}
+combined_data_test <- combined_census_data %>%
+  mutate(across(ends_with("2020"), 
+                ~ pick(str_replace(cur_column(), "2020$", "2023")) - ., 
+                .names = "change_{.col}"), 
+         .keep = "all")
+```
+
+``` {r}
+change_data <- combined_data_test %>%
+  mutate(RegionName = str_extract(NAME, "^[^,]+")) %>%  # tract-level data
+  distinct(GEOID, .keep_all = TRUE)
+```
+
+``` {r}
+combined_census_data <- combined_census_data %>% distinct(GEOID, .keep_all = TRUE)
+```
+
+```{r} 
+combined_data_for_pca <- left_join(tract_changes, change_data, by = "GEOID")
+combined_data_for_pca <- combined_data_for_pca %>%
+  filter(str_detect(NAME.x, "Alachua"))  # Assuming NAME contains county info
+```
+
+```{r}
+pca_explanatory_vars <- combined_data_for_pca %>%
+  dplyr::select(starts_with("change_"))
+
+pca_explanatory_vars <- pca_explanatory_vars %>%  
+  mutate(across(everything(), ~ as.numeric(unlist(.))))
+
+# Replace 4 NA values for change_median_contract_rent_2020 with median of the column
+
+pca_explanatory_vars <- pca_explanatory_vars %>% 
+  mutate(change_Median_Contract_Rent_2020 = ifelse(
+    is.na(change_Median_Contract_Rent_2020), 
+    median(change_Median_Contract_Rent_2020, na.rm = TRUE), 
+    change_Median_Contract_Rent_2020
+  ))
+
+dependent_var <- combined_data_for_pca$over_under_2020_2023  
+
+pca_result <- prcomp(pca_explanatory_vars, scale. = TRUE)
+
+summary(pca_result)
+
+library(ggplot2)
+
+pca_scores <- as.data.frame(pca_result$x)
+pca_scores$over_under <- dependent_var  
+
+ggplot(pca_scores, aes(x = PC1, y = PC2, color = over_under)) +
+  geom_point() +
+  labs(title = "PCA of Housing Changes (2014-2020)",
+       x = "Principal Component 1",
+       y = "Principal Component 2",
+       color = "Over/Under (%)") +
+  theme_minimal()
+```
+
+
+```{r}
+loadings <- pca_result$rotation
+print(loadings)
+
+pc1_contributions <- loadings[order(abs(loadings[, "PC1"]), decreasing = TRUE), "PC1"]
+print(pc1_contributions)
+
+pc2_contributions <- loadings[order(abs(loadings[, "PC2"]), decreasing = TRUE), "PC2"]
+print(pc2_contributions)
+```
+
+## Neural Network 
+
+```{r}
+library(keras)
+
+pca_explanatory_vars_scaled <- scale(pca_explanatory_vars[, -1]) 
+
+pca_data <- data.frame(pca_explanatory_vars_scaled, 
+                       over_under_2014_2020 = combined_data_for_pca$over_under_2014_2020)
+```
+
+```{r, message=F}
+
+set.seed(66)
+split_index <- sample(1:nrow(pca_data), 0.8 * nrow(pca_data))  
+train_data <- pca_data[split_index, ]
+test_data <- pca_data[-split_index, ]
+
+train_x <- as.matrix(train_data[, -which(names(train_data) == "over_under_2014_2020")])  
+train_y <- train_data$over_under_2014_2020
+
+test_x <- as.matrix(test_data[, -which(names(test_data) == "over_under_2014_2020")])
+test_y <- test_data$over_under_2014_2020
+
+normalize <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
+
+train_x <- apply(train_x, 2, normalize)
+test_x <- apply(test_x, 2, normalize)
+
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(train_x)) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "linear")  
+
+model %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.001),
+  loss = "mean_squared_error",
+  metrics = c("mean_absolute_error")
+)
+
+history <- model %>% fit(
+  x = train_x,
+  y = train_y,
+  epochs = 100,
+  batch_size = 32,
+  validation_split = 0.2,
+  verbose = 1
+)
+
+evaluation <- model %>% evaluate(test_x, test_y)
+cat("Test Loss:", evaluation[["loss"]], "\n")
+cat("Test MAE:", evaluation[["mean_absolute_error"]], "\n")
+
+predictions <- model %>% predict(test_x)
+comparison <- data.frame(Actual = test_y, Predicted = predictions)
+```
+
+```{r}
+head(comparison)
+```
+
+## Comparison of Outputs
+
+```{r}
+create_folds <- function(data, k = 5, seed = 42) {
+  set.seed(seed)
+  data <- data[sample(nrow(data)), ]
+  fold_indices <- cut(seq(1, nrow(data)), breaks = k, labels = FALSE)
+  
+  folds <- lapply(1:k, function(i) {
+    which(fold_indices == i)
+  })
+  
+  return(folds)
+}
+
+folds <- create_folds(pca_data, k = 5)
+```
+
+# K-fold cross validation PCA
+
+```{r}
+pca_predictions <- numeric(nrow(pca_data))  
+
+for (i in seq_along(folds)) {
+  test_indices <- folds[[i]]
+  train_data <- pca_data[-test_indices, ]
+  test_data <- pca_data[test_indices, ]
+  
+  pca_train <- prcomp(train_data[, -ncol(train_data)], scale. = TRUE)
+  train_scores <- as.data.frame(pca_train$x[, 1:2])
+  train_scores$over_under <- train_data$over_under_2014_2020
+  
+  test_scores <- predict(pca_train, newdata = test_data[, -ncol(test_data)])[, 1:2]
+  test_scores <- as.data.frame(test_scores)
+  test_scores$over_under <- test_data$over_under_2014_2020  
+  
+  model <- lm(over_under ~ ., data = train_scores)
+  pca_predictions[test_indices] <- predict(model, newdata = test_scores)
+}
+
+pca_predictions <- 100 * (pca_predictions - min(pca_predictions)) / (max(pca_predictions) - min(pca_predictions))
+```
+
+## PCA variables plot
+
+```{r}
+pca_scores_normalized <- as.data.frame(pca_scores)
+pca_scores_normalized$PC1 <- 100 * (pca_scores_normalized$PC1 - min(pca_scores_normalized$PC1)) / 
+  (max(pca_scores_normalized$PC1) - min(pca_scores_normalized$PC1))
+pca_scores_normalized$PC2 <- 100 * (pca_scores_normalized$PC2 - min(pca_scores_normalized$PC2)) / 
+  (max(pca_scores_normalized$PC2) - min(pca_scores_normalized$PC2))
+
+library(ggplot2)
+pca_scores_normalized$GentrificationStatus <- ifelse(pca_data$over_under_2014_2020 > 10, "Gentrified", "Non-Gentrified")
+
+ggplot(pca_scores_normalized, aes(x = PC1, y = PC2, color = GentrificationStatus)) +
+  geom_point(alpha = 0.7) +
+  scale_color_manual(values = c("Gentrified" = "red", "Non-Gentrified" = "green")) +
+  labs(
+    title = "Scatter Plot of Normalized PCA Variables",
+    x = "Principal Component 1 (Normalized)",
+    y = "Principal Component 2 (Normalized)",
+    color = "Gentrification Status"
+  ) +
+  theme_minimal()
+```
+
+## K-fold vross-valid for neural network
+
+```{r}
+library(keras)
+set.seed(42)
+neural_net_predictions <- numeric(nrow(pca_data)) 
+
+for (i in seq_along(folds)) {
+  test_indices <- folds[[i]]
+  train_data <- pca_data[-test_indices, ]
+  test_data <- pca_data[test_indices, ]
+  
+  normalize <- function(x) (x - min(x)) / (max(x) - min(x))
+  train_x <- apply(as.matrix(train_data[, -ncol(train_data)]), 2, normalize)
+  test_x <- apply(as.matrix(test_data[, -ncol(test_data)]), 2, normalize)
+  
+  train_y <- train_data$over_under_2014_2020
+  test_y <- test_data$over_under_2014_2020
+  
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(train_x)) %>%
+  layer_dropout(rate = 0.3) %>%  
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dropout(rate = 0.3) %>%  
+  layer_dense(units = 1, activation = "linear")
+
+model %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.001),  \
+  loss = "mean_squared_error",
+  metrics = c("mean_absolute_error")
+)
+
+  model %>% compile(
+    optimizer = optimizer_adam(learning_rate = 0.001),
+    loss = "mean_squared_error",
+    metrics = c("mean_absolute_error")
+  )
+  
+  history <- model %>% fit(
+    x = train_x, y = train_y,
+    epochs = 50,
+    batch_size = 16,
+    verbose = 0
+  )
+  
+  test_predictions <- model %>% predict(test_x)
+  neural_net_predictions[test_indices] <- test_predictions
+  
+}
+neural_net_predictions <- 100 * (neural_net_predictions - min(neural_net_predictions)) / 
+                          (max(neural_net_predictions) - min(neural_net_predictions))
+cat("Neural Network predictions generated successfully.\n")
+```
+
+## Neural Network Plot
+
+```{r}
+plot_data <- data.frame(
+  Actual = pca_data$over_under_2014_2020,
+  Predicted = neural_net_predictions
+)
+
+ggplot(plot_data, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.6, color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Actual vs. Predicted Values from Neural Network",
+       x = "Actual Values",
+       y = "Predicted Values") +
+  theme_minimal()
+
+plot_data$residuals <- plot_data$Actual - plot_data$Predicted
+
+ggplot(plot_data, aes(x = Actual, y = residuals)) +
+  geom_point(alpha = 0.6, color = "darkgreen") +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals of Neural Network Predictions",
+       x = "Actual Values",
+       y = "Residuals") +
+  theme_minimal()
+
+library(ggplot2)
+
+plot_data$GentrificationStatus <- ifelse(plot_data$Actual > 10, "Gentrified", "Non-Gentrified")
+
+ggplot(plot_data, aes(x = Actual, y = Predicted, color = GentrificationStatus)) +
+  geom_point(alpha = 0.7) +
+  scale_color_manual(values = c("Gentrified" = "red", "Non-Gentrified" = "green")) +
+  labs(
+    title = "Scatter Plot of Neural Network Predictions vs Actual Values",
+    x = "Percent change in Average Home Value Compared to State Average",
+    y = "Predicted Gentrification Score (Normalized)",
+    color = "Gentrification Status"
+  ) +
+  theme_minimal()
+```
+
+## Boundary classification code setup
+
+```{r}
+train_index <- sample(seq_len(nrow(pca_data)), size = 0.7 * nrow(pca_data))
+train_data <- pca_data[train_index, ]
+test_data <- pca_data[-train_index, ]
+
+combined_indicator <- (pca_predictions + neural_net_predictions) / 2
+pca_data$combined_indicator <- combined_indicator
+
+pca_data$GentrificationStatus <- ifelse(pca_data$over_under_2014_2020 > 10, "Gentrified", "Non-Gentrified")
+actual_labels <- ifelse(test_data$GentrificationStatus == "Gentrified", 1, 0)
+```
+
+
+```{r}
+summary(pca_data$combined_indicator)
+table(pca_data$GentrificationStatus)
+
+library(ggplot2)
+ggplot(pca_data, aes(x = combined_indicator, fill = GentrificationStatus)) +
+  geom_density(alpha = 0.7) +
+  labs(title = "Distribution of Combined Indicator by Gentrification Status",
+       x = "Combined Indicator",
+       y = "Density")
+```
+
+
+```{r}
+table(qda_predictions$class)
+table(lda_predictions)
+table(svm_predictions)
+```
+
+# County QDA Comparison
+
+```{r}
+library(MASS)
+
+qda_model <- qda(GentrificationStatus ~ combined_indicator, 
+                 data = train_data, 
+                 prior = c(0.5, 0.5)) 
+
+
+qda_predictions <- predict(qda_model, newdata = test_data)
+predicted_labels_qda <- ifelse(qda_predictions$class == "Gentrified", 1, 0)
+qda_mse <- mean((actual_labels - predicted_labels_qda)^2)
+
+cat("QDA Mean Squared Error (MSE):", qda_mse, "\n")
+```
+
+## Combined QDA plots
+
+```{r}
+library(ggplot2)
+
+grid <- data.frame(combined_indicator = seq(min(pca_data$combined_indicator), 
+                                            max(pca_data$combined_indicator), 
+                                            length.out = 200))
+
+grid$prediction <- predict(qda_model, grid)$class
+
+ggplot() +
+  geom_density(data = train_data, aes(x = combined_indicator, fill = GentrificationStatus), alpha = 0.7) +
+  geom_point(data = grid, aes(x = combined_indicator, y = 0, color = prediction), 
+             size = 1.5, shape = "|") +
+  labs(title = "QDA Decision Boundary with Combined Indicator",
+       x = "Combined Indicator",
+       y = "Density") +
+  scale_color_manual(values = c("Gentrified" = "steelblue", "Non-Gentrified" = "lightgray")) +
+  theme_minimal()
+```
+
+## LDA
+
+```{r}
+library(MASS)
+
+lda_model <- lda(GentrificationStatus ~ combined_indicator, 
+                 data = train_data, 
+                 prior = c(0.5, 0.5))
+
+lda_predictions <- predict(lda_model, newdata = test_data)$class
+predicted_labels_lda <- ifelse(lda_predictions == "Gentrified", 1, 0)
+lda_mse <- mean((actual_labels - predicted_labels_lda)^2)
+
+cat("LDA Mean Squared Error (MSE):", lda_mse, "\n")
+```
+
+# Plot
+
+```{r}
+library(MASS)
+library(ggplot2)
+
+grid <- data.frame(combined_indicator = seq(min(pca_data$combined_indicator), 
+                                            max(pca_data$combined_indicator), 
+                                            length.out = 200))
+
+grid$prediction <- predict(lda_model, grid)$class
+
+ggplot() +
+  geom_density(data = train_data, aes(x = combined_indicator, fill = GentrificationStatus), alpha = 0.7) +
+  geom_point(data = grid, aes(x = combined_indicator, y = 0, color = prediction), 
+             size = 1.5, shape = "|") +
+  labs(title = "LDA Decision Boundary with Combined Indicator",
+       x = "Combined Indicator",
+       y = "Density") +
+  scale_color_manual(values = c("Gentrified" = "steelblue", "Non-Gentrified" = "lightgray")) +
+  theme_minimal()
+```
+
+## Error Rate
+
+```{r}
+lda_predictions <- predict(lda_model, newdata = pca_data)$class
+
+actual_labels <- ifelse(pca_data$GentrificationStatus == "Gentrified", 1, 0)
+predicted_labels <- ifelse(lda_predictions == "Gentrified", 1, 0)
+mse <- mean((actual_labels - predicted_labels)^2)
+
+cat("Mean Squared Error (MSE) for LDA classification:", mse, "\n")
+```
+
+## SVM
+
+```{r}
+library(e1071)
+train_data$GentrificationStatus <- as.factor(train_data$GentrificationStatus)
+test_data$GentrificationStatus <- as.factor(test_data$GentrificationStatus)
+
+train_data$combined_indicator <- scale(train_data$combined_indicator)
+test_data$combined_indicator <- scale(test_data$combined_indicator)
+
+svm_model <- svm(GentrificationStatus ~ combined_indicator, 
+                 data = train_data,
+                 kernel = 'radial',
+                 class.weights = c("Gentrified" = 3, "Non-Gentrified" = 1))
+
+summary(svm_model)
+```
+
+# SVM with k-fold cross validation
+
+``` {r}
+library(e1071)
+
+tuned_model <- tune(
+    svm,
+    GentrificationStatus ~ combined_indicator,
+    data = train_data,
+    kernel = "radial",
+    ranges = list(cost = 10^(-2:2), gamma = 10^(-3:1))
+)
+
+best_model <- tuned_model$best.model
+svm_predictions <- predict(best_model, newdata = test_data, probability = TRUE)
+
+accuracy <- mean(svm_predictions == test_data$GentrificationStatus)
+cat("Tuned SVM Accuracy:", accuracy, "\n")
+
+conf_matrix <- table(Predicted = svm_predictions, Actual = test_data$GentrificationStatus)
+print("Confusion Matrix:")
+print(conf_matrix)
+```
+
+```{r}
+library(ggplot2)
+
+grid <- data.frame(combined_indicator = seq(min(train_data$combined_indicator),
+                                            max(train_data$combined_indicator), 
+                                            length.out = 500))
+
+grid$prediction <- predict(svm_model, newdata = grid, probability = TRUE)
+grid$normalized_prediction <- ifelse(grid$prediction == "Gentrified", 1, 0)
+
+ggplot() +
+  geom_density(data = train_data, aes(x = combined_indicator, fill = GentrificationStatus), 
+               alpha = 0.7) +
+  geom_point(data = grid, aes(x = combined_indicator, y = 0, color = prediction), 
+             size = 1.5, shape = "|") +
+  labs(title = "SVM Decision Boundary with Combined Indicator",
+       x = "Combined Indicator",
+       y = "Density") +
+  scale_color_manual(values = c("Gentrified" = "steelblue", "Non-Gentrified" = "lightgray")) +
+  scale_fill_manual(values = c("Gentrified" = "steelblue", "Non-Gentrified" = "lightgray")) +
+  theme_minimal()
+```
+
+``` {r}
+grid <- data.frame(combined_indicator = seq(min(train_data$combined_indicator),
+                                            max(train_data$combined_indicator), 
+                                            length.out = 1000))
+
+svm_probs <- predict(svm_model, newdata = grid, probability = TRUE)
+grid$decision_value <- attr(svm_probs, "decision.values")
+boundary <- grid$combined_indicator[which.min(abs(grid$decision_value))]
+print(paste("The decision boundary is at combined_indicator =", boundary))
+```
+
+
+```{r}
+library(e1071)
+library(ggplot2)
+
+train_data$GentrificationStatus <- as.factor(train_data$GentrificationStatus)
+train_data$combined_indicator <- scale(train_data$combined_indicator) 
+test_data$combined_indicator <- scale(test_data$combined_indicator) 
+
+svm_model <- svm(GentrificationStatus ~ combined_indicator, 
+                 data = train_data,
+                 kernel = 'radial')
+
+# Predict decision boundary over a range of combined_indicator values
+grid <- data.frame(combined_indicator = seq(min(train_data$combined_indicator, na.rm = TRUE),
+                                            max(train_data$combined_indicator, na.rm = TRUE), length.out = 500))
+
+grid$prediction <- predict(svm_model, newdata = grid)
+
+# Create a plot of density and SVM decision boundary
+ggplot() +
+  # Density plots for gentrified and non-gentrified counties
+  geom_density(data = train_data, 
+               aes(x = combined_indicator, fill = GentrificationStatus), 
+               alpha = 0.6) +
+  # Decision boundary visualization using SVM model predictions
+  geom_vline(xintercept = as.numeric(names(sort(table(grid$prediction), decreasing = TRUE))[2]),
+             color = "red", linetype = "dashed", size = 1) +
+  # Add plot labels
+  labs(title = "SVM Decision Boundary and Combined Indicator Density",
+       x = "Combined Indicator",
+       y = "Density") +
+  scale_fill_manual(values = c("Gentrified" = "blue", "Non-Gentrified" = "gray")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+```
+``` {r}
+library(e1071)
+library(ggplot2)
+
+train_data$combined_indicator <- scale(train_data$combined_indicator)
+test_data$combined_indicator <- scale(test_data$combined_indicator)
+summary(train_data$combined_indicator)
+summary(test_data$combined_indicator)
+
+tuned_model <- tune(
+  svm,
+  GentrificationStatus ~ combined_indicator,
+  data = train_data,
+  kernel = "radial",
+  probability = TRUE,
+  ranges = list(cost = 10^(-2:4), gamma = 10^(-4:2))
+)
+print(tuned_model)
+
+best_model <- tuned_model$best.model
+svm_raw_predictions <- predict(best_model, newdata = test_data)
+table(svm_raw_predictions, test_data$GentrificationStatus)
+
+grid <- data.frame(combined_indicator = seq(min(train_data$combined_indicator),
+                                            max(train_data$combined_indicator),
+                                            length.out = 500))
+
+svm_predictions_prob <- attr(predict(best_model, newdata = grid, probability = TRUE), "probabilities")[, "Gentrified"]
+grid$prob_prediction <- svm_predictions_prob
+summary(grid$prob_prediction)
+
+ggplot(grid, aes(x = combined_indicator, y = prob_prediction)) +
+  geom_line(color = "blue", size = 1) +
+  geom_hline(yintercept = 0.5, linetype = "dashed", color = "red") +
+  labs(title = "SVM Decision Boundary with Tuned Model",
+       x = "Scaled Combined Indicator",
+       y = "Predicted Probability of Gentrified") +
+  theme_minimal()
+```
+
+``` {r}
+library(cluster)
+library(dplyr)
+
+census_features <- census_data_2020 %>%
+  dplyr::select(Vacancy_Rate_Percent_2020, Percent_White_Alone_2020, Percent_Black_Alone_2020, Percent_Below_Poverty_2020, Percent_Renter_Paying_30_2020)
+
+census_features_ungr <- census_features %>%
+  ungroup() %>%
+  dplyr::select(-GEOID)  
+
+scaled_features <- scale(census_features_ungr)
+kmeans_result <- kmeans(scaled_features, centers = 3)
+census_data_2020$Cluster <- kmeans_result$cluster
+```
+
+
+``` {r}
+pca_result <- prcomp(scaled_features)
+
+plot_data <- data.frame(
+  PC1 = pca_result$x[, 1],
+  PC2 = pca_result$x[, 2],
+  cluster = as.factor(kmeans_result$cluster)  
+)
+
+library(ggplot2)
+ggplot(plot_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(size = 2) +
+  labs(title = "PCA Performed on K-Means Clusters",
+       x = "Principal Component 1", y = "Principal Component 2") +
+  theme_minimal()
+```
+
+``` {r}
+centers_df <- as.data.frame(kmeans_result$centers)
+centers_df
+```
